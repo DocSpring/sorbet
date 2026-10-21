@@ -33,8 +33,9 @@ cc_binary(
     visibility = ["//visibility:public"],
     deps = [
         "realmain",
-        "//main/pipeline/semantic_extension:none",
         "//payload",
+        # The rewriter plugins in //plugins:plugins.bzl, in place of //main/pipeline/semantic_extension:none.
+        "//plugins:host",
     ],
 )
 

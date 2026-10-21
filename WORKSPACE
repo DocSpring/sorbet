@@ -5,6 +5,10 @@ load("//third_party:externals.bzl", "register_sorbet_dependencies")
 
 register_sorbet_dependencies()
 
+load("//plugins:plugins.bzl", "register_sorbet_plugins")
+
+register_sorbet_plugins()
+
 load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_dependencies")
 
 # We need to explicitly pull in make here for rules_foreign_cc
