@@ -12,14 +12,25 @@ and ActiveAdmin.
   `plugins.bzl` lists the plugin repositories to compile in.
 - `main/BUILD` and `WORKSPACE`: link `//plugins:host` and register the plugin repositories.
 - `core/GlobalState.cc`: `copyForIndexThread` copies the semantic extensions. Without it the rewriter's
-  semantic-extension hook never runs for files indexed on worker threads. This is an upstream bug; the fix is proposed
-  in [sorbet/sorbet#10804](https://github.com/sorbet/sorbet/pull/10804).
+  semantic-extension hook never runs for files indexed on worker threads. Upstream merged the fix on 2026-10-21
+  ([sorbet/sorbet#10804](https://github.com/sorbet/sorbet/pull/10804), `94623ce8a`), so rebasing onto a base that
+  includes it drops this commit.
 - `tools/buildstamp/get_workspace_status`: `SORBET_VERSION_COMMIT_COUNT` overrides the commit count in the version, so
   this build reports the upstream version it's based on.
 - `docspring/` and `.github/workflows/docspring-release.yml`: the release build.
 
 Plugins only run when enabled (`--enable-plugin=rspec`, or in `sorbet/config`), so without flags this build behaves
 like upstream.
+
+## Semantic extensions aren't a supported API
+
+Sorbet added the `SemanticExtensionProvider` slot in 2019
+([sorbet/sorbet#1485](https://github.com/sorbet/sorbet/pull/1485)) for the Sorbet Compiler, which upstream removed in
+2024 ([sorbet/sorbet#7849](https://github.com/sorbet/sorbet/pull/7849)). The slot was never documented for others to
+build on, and the maintainers have said it might be deleted. If it is, this branch re-adds it: the plugins only see
+`plugins/Plugin.h`, so the change is limited to the rewriter's call, `GlobalState` and `PluginHost.cc`. When moving to
+a new upstream release, check that `rewriter/rewriter.cc` still calls each extension's `run` on every class body (the
+plugin tests fail if it doesn't).
 
 ## Building locally
 
