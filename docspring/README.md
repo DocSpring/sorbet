@@ -42,6 +42,10 @@ plus the matching `sorbet` and `sorbet-static-and-runtime` gems, runs the plugin
 and attaches the gems to a GitHub release. Then run `gh workflow run publish.yml --repo DocSpring/gems`, which adds
 them to the gem source at https://docspring.github.io/gems/ (see [DocSpring/gems](https://github.com/DocSpring/gems)).
 
+The `sorbet` gem also carries each plugin's RBI generator, from the same sorbet-plugins commit as the binary, at
+`lib/sorbet-plugins/<plugin>/generate_rbi.rb`. An app runs them from the installed gem
+(`Gem::Specification.find_by_name('sorbet').gem_dir`), so the RBIs always match the plugins that read them.
+
 ## Moving to a new upstream release
 
 ```sh
