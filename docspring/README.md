@@ -38,8 +38,9 @@ sorbet-plugins commit a release builds with. Gems are versioned `<BASE_VERSION>.
 collide with an upstream version.
 
 Pushing a tag `docspring-<BASE_VERSION>.<n>` builds `sorbet-static` for arm64-darwin, x86_64-linux and aarch64-linux
-plus the matching `sorbet` gem, runs the plugin tests, benchmarks against upstream, and attaches the gems to a GitHub
-release.
+plus the matching `sorbet` and `sorbet-static-and-runtime` gems, runs the plugin tests, benchmarks against upstream,
+and attaches the gems to a GitHub release. Then run `gh workflow run publish.yml --repo DocSpring/gems`, which adds
+them to the gem source at https://docspring.github.io/gems/ (see [DocSpring/gems](https://github.com/DocSpring/gems)).
 
 ## Moving to a new upstream release
 
