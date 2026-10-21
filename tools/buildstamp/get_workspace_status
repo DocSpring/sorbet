@@ -34,7 +34,8 @@ fi
 
 # The code below presents an implementation that works for git repository
 git_rev=$(git rev-parse HEAD)
-git_commit_count=$(git rev-list --count HEAD)
+# A fork that releases under the upstream version it's based on sets SORBET_VERSION_COMMIT_COUNT.
+git_commit_count="${SORBET_VERSION_COMMIT_COUNT:-$(git rev-list --count HEAD)}"
 echo "STABLE_BUILD_SCM_REVISION ${git_rev}"
 echo "STABLE_BUILD_SCM_COMMIT_COUNT ${git_commit_count}"
 

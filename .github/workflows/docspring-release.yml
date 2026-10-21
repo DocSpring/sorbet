@@ -1,0 +1,142 @@
+# Builds Sorbet with the rewriter plugins from DocSpring/sorbet-plugins, tests the plugins, benchmarks them against
+# the upstream release this branch is based on, and on a `docspring-<version>` tag publishes the gems as a GitHub
+# release. See docspring/README.md.
+name: DocSpring release
+
+on:
+  push:
+    branches: [docspring]
+    tags: ['docspring-*']
+  pull_request:
+    branches: [docspring]
+  workflow_dispatch:
+    inputs:
+      plugins_ref:
+        description: DocSpring/sorbet-plugins ref to build with (default docspring/PLUGINS_REF)
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            platform: arm64-darwin
+            config: release-mac
+          - os: ubuntu-24.04
+            platform: x86_64-linux
+            config: release-linux
+          - os: ubuntu-24.04-arm
+            platform: aarch64-linux
+            config: release-linux-aarch64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: sorbet
+      - name: Plugins ref
+        id: plugins
+        env:
+          REF_INPUT: ${{ inputs.plugins_ref }}
+        run: echo "ref=${REF_INPUT:-$(cat sorbet/docspring/PLUGINS_REF)}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          repository: DocSpring/sorbet-plugins
+          ref: ${{ steps.plugins.outputs.ref }}
+          path: sorbet-plugins
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+
+      - name: Free disk space
+        if: runner.os == 'Linux'
+        # A cold release build needs more than the ~14 GB the runner image leaves free.
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL && df -h /
+
+      - name: Version
+        id: version
+        working-directory: sorbet
+        run: |
+          base="$(cat docspring/BASE_VERSION)"
+          if [[ "$GITHUB_REF" == refs/tags/docspring-* ]]; then
+            version="${GITHUB_REF#refs/tags/docspring-}"
+            [[ "$version" == "$base".* ]] || { echo "Tag $GITHUB_REF doesn't match BASE_VERSION $base"; exit 1; }
+          else
+            version="${base}.0.${GITHUB_RUN_NUMBER}"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "commit_count=${base##*.}" >> "$GITHUB_OUTPUT"
+
+      - uses: bazel-contrib/setup-bazel@0.9.0
+        with:
+          bazelisk-cache: true
+          disk-cache: ${{ matrix.platform }}
+          repository-cache: true
+
+      - name: Build
+        working-directory: sorbet
+        env:
+          SORBET_VERSION_COMMIT_COUNT: ${{ steps.version.outputs.commit_count }}
+        run: ./bazel build //main:sorbet --strip=always --config=${{ matrix.config }}
+
+      - name: Test the plugins
+        run: |
+          sorbet/bazel-bin/main/sorbet --version
+          ruby sorbet-plugins/test/run_tests.rb sorbet/bazel-bin/main/sorbet
+
+      - name: Build gems
+        working-directory: sorbet
+        run: docspring/build-gems.sh ${{ matrix.platform }} ${{ steps.version.outputs.version }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gems-${{ matrix.platform }}
+          path: sorbet/dist/*.gem
+          if-no-files-found: error
+
+  benchmark:
+    name: Benchmark the plugins
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: sorbet
+      - uses: actions/download-artifact@v4
+        with:
+          name: gems-x86_64-linux
+          path: gems
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+      - name: Run
+        run: sudo apt-get install -y hyperfine >/dev/null && sorbet/docspring/benchmark.sh gems
+
+  release:
+    name: Publish the release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/docspring-')
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: gems-*
+          path: dist
+          merge-multiple: true
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Each build also wrote the same platform-independent sorbet gem; merging the artifacts keeps one copy.
+          ls -l dist
+          version="${GITHUB_REF_NAME#docspring-}"
+          gh release create "$GITHUB_REF_NAME" dist/*.gem --repo "$GITHUB_REPOSITORY" --title "Sorbet $version" \
+            --notes "Sorbet $version with the rewriter plugins from DocSpring/sorbet-plugins."
