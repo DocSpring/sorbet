@@ -37,9 +37,10 @@ ruby ../sorbet-plugins/test/run_tests.rb bazel-bin/main/sorbet
 sorbet-plugins commit a release builds with. Gems are versioned `<BASE_VERSION>.<n>` (`0.6.13583.1`), so they never
 collide with an upstream version.
 
-Pushing a tag `docspring-<BASE_VERSION>.<n>` builds `sorbet-static` for arm64-darwin, x86_64-linux and aarch64-linux
-plus the matching `sorbet` and `sorbet-static-and-runtime` gems, runs the plugin tests, benchmarks against upstream,
-and attaches the gems to a GitHub release. Then run `gh workflow run publish.yml --repo DocSpring/gems`, which adds
+Pushing a tag `docspring-<BASE_VERSION>.<n>` builds `sorbet-static` for universal-darwin (arm64 plus an x86_64
+cross-build, as upstream does), x86_64-linux and aarch64-linux, plus the matching `sorbet` and
+`sorbet-static-and-runtime` gems, runs the plugin tests, benchmarks against upstream, and attaches the gems to a
+GitHub release. Then run `gh workflow run publish.yml --repo DocSpring/gems`, which adds
 them to the gem source at https://docspring.github.io/gems/ (see [DocSpring/gems](https://github.com/DocSpring/gems)).
 
 The `sorbet` gem also carries each plugin's RBI generator, from the same sorbet-plugins commit as the binary, at

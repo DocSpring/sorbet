@@ -29,7 +29,7 @@ jobs:
       matrix:
         include:
           - os: macos-15
-            platform: arm64-darwin
+            platform: universal-darwin
             config: release-mac
           - os: ubuntu-24.04
             platform: x86_64-linux
@@ -85,15 +85,29 @@ jobs:
         working-directory: sorbet
         env:
           SORBET_VERSION_COMMIT_COUNT: ${{ steps.version.outputs.commit_count }}
-        run: ./bazel build //main:sorbet --strip=always --config=${{ matrix.config }}
+        run: |
+          ./bazel build //main:sorbet --strip=always --config=${{ matrix.config }}
+          mkdir -p out
+          if [[ "$RUNNER_OS" == macOS ]]; then
+            # Like upstream's release build: cross-build x86_64 too and ship one universal binary.
+            cp bazel-bin/main/sorbet out/sorbet-arm64
+            ./bazel build //main:sorbet --strip=always --config=${{ matrix.config }} --config=cross-to-darwin-x86_64
+            cp bazel-bin/main/sorbet out/sorbet-x86_64
+            lipo -create -output out/sorbet out/sorbet-arm64 out/sorbet-x86_64
+            lipo -archs out/sorbet
+          else
+            cp bazel-bin/main/sorbet out/sorbet
+          fi
 
       - name: Test the plugins
         run: |
-          sorbet/bazel-bin/main/sorbet --version
-          ruby sorbet-plugins/test/run_tests.rb sorbet/bazel-bin/main/sorbet
+          sorbet/out/sorbet --version
+          ruby sorbet-plugins/test/run_tests.rb sorbet/out/sorbet
 
       - name: Build gems
         working-directory: sorbet
+        env:
+          SORBET_BIN: out/sorbet
         run: docspring/build-gems.sh ${{ matrix.platform }} ${{ steps.version.outputs.version }}
 
       - uses: actions/upload-artifact@v4

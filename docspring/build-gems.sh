@@ -1,8 +1,8 @@
 #!/bin/bash
-# Packages bazel-bin/main/sorbet as the sorbet-static gem for one platform, plus the matching sorbet and
-# sorbet-static-and-runtime gems.
+# Packages a Sorbet binary (SORBET_BIN, default bazel-bin/main/sorbet) as the sorbet-static gem for one platform, plus
+# the matching sorbet and sorbet-static-and-runtime gems.
 #
-#   docspring/build-gems.sh <platform> <version>    # e.g. arm64-darwin 0.6.13583.1
+#   docspring/build-gems.sh <platform> <version>    # e.g. universal-darwin 0.6.13583.1
 #
 # Writes dist/sorbet-static-<version>-<platform>.gem, dist/sorbet-<version>.gem and
 # dist/sorbet-static-and-runtime-<version>.gem. The sorbet gem also carries each plugin's RBI generator
@@ -24,7 +24,7 @@ mkdir -p "$dist"
 
 rm -rf gems/sorbet-static/libexec
 mkdir gems/sorbet-static/libexec
-cp bazel-bin/main/sorbet gems/sorbet-static/libexec/sorbet
+cp "${SORBET_BIN:-bazel-bin/main/sorbet}" gems/sorbet-static/libexec/sorbet
 
 source_uri="https://github.com/DocSpring/sorbet/tree/docspring"
 (
