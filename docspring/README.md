@@ -12,7 +12,8 @@ and ActiveAdmin.
   `plugins.bzl` lists the plugin repositories to compile in.
 - `main/BUILD` and `WORKSPACE`: link `//plugins:host` and register the plugin repositories.
 - `core/GlobalState.cc`: `copyForIndexThread` copies the semantic extensions. Without it the rewriter's
-  semantic-extension hook never runs for files indexed on worker threads (an upstream bug, to report).
+  semantic-extension hook never runs for files indexed on worker threads. This is an upstream bug; the fix is proposed
+  in [sorbet/sorbet#10804](https://github.com/sorbet/sorbet/pull/10804).
 - `tools/buildstamp/get_workspace_status`: `SORBET_VERSION_COMMIT_COUNT` overrides the commit count in the version, so
   this build reports the upstream version it's based on.
 - `docspring/` and `.github/workflows/docspring-release.yml`: the release build.
