@@ -74,7 +74,9 @@ The `sorbet` gem also carries each plugin's RBI generator, from the same sorbet-
 `lib/sorbet-plugins/<plugin>/generate_rbi.rb` (with the plugin's `generator/` directory, for a generator in several
 files). An app runs them from the installed gem (`Gem::Specification.find_by_name('sorbet').gem_dir`), so the RBIs
 always match the plugins that read them. The erb_views generator also runs the installed binary
-(`sorbet-static`'s `libexec/sorbet`): it reads the types of the values that reach each template from Sorbet.
+(`sorbet-static`'s `libexec/sorbet`): it reads the types of the values that reach each template from Sorbet. Its
+runtime check (`lib/sorbet-plugins/erb_views/generator/runtime_check.rb`), which an app's test environment requires,
+checks each render against the RBIs the generator wrote.
 
 ## Moving to a new upstream release
 
