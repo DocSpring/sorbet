@@ -1,9 +1,20 @@
 # DocSpring's Sorbet build
 
-This branch (`docspring`) is upstream Sorbet plus a small plugin core, built with the rewriter plugins from
+This branch (`docspring`) is upstream Sorbet plus a small plugin core, built with the plugins from
 [DocSpring/sorbet-plugins](https://github.com/DocSpring/sorbet-plugins). The plugins teach Sorbet the DSLs that
 otherwise leave blocks untyped: RSpec (spec types, loops, shared examples), Capybara's feature DSL, rswag, FactoryBot
-and ActiveAdmin.
+and ActiveAdmin. One more, `erb_views`, type-checks Rails' ERB templates: each template is checked at `typed: strict`
+against the controllers and mailers that render it, with its instance variables' types inferred from their actions,
+and each partial's locals typed by a `sig` comment.
+
+Our other Sorbet work:
+
+- [DocSpring/sorbet-plugins](https://github.com/DocSpring/sorbet-plugins): the plugins, their RBI generators and
+  their tests, and what we learned writing them.
+- [DocSpring/gems](https://github.com/DocSpring/gems): the gem source (https://docspring.github.io/gems/) that serves
+  this build's releases.
+- [sorbet/sorbet#10804](https://github.com/sorbet/sorbet/pull/10804): our fix for semantic extensions on Sorbet's
+  indexing threads, merged upstream.
 
 ## What's changed from upstream
 
@@ -11,6 +22,11 @@ and ActiveAdmin.
   `SemanticExtensionProvider` slot (stock Sorbet links an empty one) and adds `--enable-plugin=<name>`.
   `plugins.bzl` lists the plugin repositories to compile in.
 - `main/BUILD` and `WORKSPACE`: link `//plugins:host` and register the plugin repositories.
+- `main/pipeline/pipeline.cc`, `parser/` and `SemanticExtension.h`: two more hooks for plugins.
+  `transformSource` gives Sorbet the Ruby to parse for a file in another language (the erb_views plugin's templates),
+  with as many bytes as the file, so error messages, autocorrects and the language server's edits use the file's own
+  text at the same offsets. `strictLevelWithoutSigil` gives such a file's strictness when it has no `typed:` sigil.
+  Sorbet still reads only the extensions `--allowed-extension` lists.
 - `core/GlobalState.cc`: `copyForIndexThread` copies the semantic extensions. Without it the rewriter's
   semantic-extension hook never runs for files indexed on worker threads. Upstream merged the fix on 2026-10-21
   ([sorbet/sorbet#10804](https://github.com/sorbet/sorbet/pull/10804), `94623ce8a`), so rebasing onto a base that
