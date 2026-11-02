@@ -9,8 +9,9 @@ namespace sorbet::parser::Prism {
 
 using namespace std::literals::string_view_literals;
 
-Prism::ParseResult Parser::run(core::MutableContext ctx, bool preserveConcreteSyntax) {
-    auto parser = make_unique<Prism::Parser>(ctx.file.data(ctx).source());
+Prism::ParseResult Parser::run(core::MutableContext ctx, bool preserveConcreteSyntax,
+                               optional<string> transformedSource) {
+    auto parser = make_unique<Prism::Parser>(ctx.file.data(ctx).source(), move(transformedSource));
     pm_node_t *root = pm_parse(parser->getRawParserPointer());
 
     bool collectComments = ctx.state.cacheSensitiveOptions.rbsEnabled;

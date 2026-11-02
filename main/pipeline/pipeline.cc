@@ -168,6 +168,13 @@ core::StrictLevel decideStrictLevel(const core::GlobalState &gs, const core::Fil
 
     if (fileData.originalSigil == core::StrictLevel::None) {
         level = core::StrictLevel::False;
+        // DocSpring: a plugin can give the files it reads another default (the erb_views plugin's templates are
+        // strict).
+        for (auto &extension : gs.semanticExtensions) {
+            if (auto pluginLevel = extension->strictLevelWithoutSigil(fileData.path())) {
+                level = *pluginLevel;
+            }
+        }
     } else {
         level = fileData.originalSigil;
     }
@@ -241,6 +248,25 @@ ast::ExpressionPtr fetchTreeFromCache(core::GlobalState &gs, core::FileRef fref,
     return tree;
 }
 
+// DocSpring: the Ruby to parse for a file that a semantic extension reads as something else (the erb_views plugin
+// reads templates), or nullopt to parse the file's source. It has as many bytes as the source, so every location in
+// it is a location in the file.
+optional<string> transformedSource(const core::GlobalState &gs, core::FileRef file) {
+    auto &data = file.data(gs);
+    optional<string> result;
+    for (auto &extension : gs.semanticExtensions) {
+        auto source = result.has_value() ? string_view(*result) : data.source();
+        if (auto transformed = extension->transformSource(data.path(), source)) {
+            if (transformed->size() != data.source().size()) {
+                Exception::raise("A semantic extension changed the length of {}: {} bytes from {}", data.path(),
+                                 transformed->size(), data.source().size());
+            }
+            result = move(transformed);
+        }
+    }
+    return result;
+}
+
 parser::ParseResult runParser(core::GlobalState &gs, core::FileRef file, const options::Printers &print,
                               bool traceLexer, bool traceParser) {
     parser::ParseResult result;
@@ -250,7 +276,8 @@ parser::ParseResult runParser(core::GlobalState &gs, core::FileRef file, const o
 
         auto indentationAware = false; // Don't start in indentation-aware error recovery mode
         auto settings = parser::Parser::Settings{traceLexer, traceParser, indentationAware};
-        result = parser::Parser::run(gs, file, settings);
+        auto source = transformedSource(gs, file);
+        result = parser::Parser::run(gs, file, settings, {}, source);
     }
 
     if (print.ParseTree.enabled) {
@@ -274,7 +301,7 @@ parser::Prism::ParseResult runPrismParser(core::GlobalState &gs, core::FileRef f
     core::UnfreezeNameTable nameTableAccess(gs); // enters strings from source code as names
 
     core::MutableContext ctx(gs, core::Symbols::root(), file);
-    return parser::Prism::Parser::run(ctx);
+    return parser::Prism::Parser::run(ctx, preserveConcreteSyntax, transformedSource(gs, file));
 }
 
 void runRBSRewrite(core::GlobalState &gs, core::FileRef file, parser::Prism::ParseResult &parseResult,

@@ -2,7 +2,9 @@
 #define SORBET_PARSER_PRISM_PARSER_H
 
 #include <memory>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 extern "C" {
@@ -33,6 +35,9 @@ class Parser final {
     // The version of Ruby syntax that we're parsing with Prism. This determines what syntax is supported or not.
     static constexpr std::string_view ParsedRubyVersion = "3.4.0";
 
+    // DocSpring: the Ruby a semantic extension gave in place of the file's source, which `parser` reads.
+    std::optional<std::string> transformedSource;
+
     pm_parser_t parser;
     pm_options_t options;
 
@@ -45,10 +50,12 @@ class Parser final {
     friend class Factory;
 
 public:
-    Parser(std::string_view sourceCode) : parser{}, options{} {
+    Parser(std::string_view sourceCode, std::optional<std::string> transformedSource = std::nullopt)
+        : transformedSource(std::move(transformedSource)), parser{}, options{} {
         pm_options_version_set(&options, ParsedRubyVersion.data(), ParsedRubyVersion.size());
 
-        pm_parser_init(&parser, reinterpret_cast<const uint8_t *>(sourceCode.data()), sourceCode.size(), &options);
+        std::string_view source = this->transformedSource.has_value() ? *this->transformedSource : sourceCode;
+        pm_parser_init(&parser, reinterpret_cast<const uint8_t *>(source.data()), source.size(), &options);
     }
 
     ~Parser() {
@@ -61,7 +68,9 @@ public:
     Parser(Parser &&) = delete;
     Parser &operator=(Parser &&) = delete;
 
-    static Prism::ParseResult run(core::MutableContext ctx, bool preserveConcreteSyntax = false);
+    // DocSpring: `transformedSource`, when given, is parsed in place of the file's source, and has as many bytes.
+    static Prism::ParseResult run(core::MutableContext ctx, bool preserveConcreteSyntax = false,
+                                  std::optional<std::string> transformedSource = std::nullopt);
     core::LocOffsets translateLocation(pm_location_t location) const;
     core::LocOffsets translateLocation(const uint8_t *start, const uint8_t *end) const;
     std::string_view resolveConstant(pm_constant_id_t constantId) const;

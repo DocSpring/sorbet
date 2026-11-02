@@ -127,12 +127,12 @@ unique_ptr<ruby_parser::base_driver> makeDriver(Parser::Settings settings, strin
 } // namespace
 
 ParseResult Parser::run(core::GlobalState &gs, core::FileRef file, Parser::Settings settings,
-                        vector<string> initialLocals) {
+                        vector<string> initialLocals, optional<string_view> sourceOverride) {
     // Marked `const` so that we can re-use across multiple `build()` invocations
     const Builder builder(gs, file);
 
     // `buffer` and `scratch` can also be shared by both drivers
-    auto source = file.data(gs).source();
+    auto source = sourceOverride.value_or(file.data(gs).source());
     // The lexer requires that its buffers end with a null terminator, which core::File
     // does not guarantee.  Parsing heredocs for some mysterious reason requires two.
     //

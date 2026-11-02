@@ -25,7 +25,8 @@ vector<string> registeredNames() {
     return names;
 }
 
-// Runs the enabled plugins from the rewriter's semantic extension hook. The other hooks are unused.
+// Runs the enabled plugins from the rewriter's semantic extension hook and the source and strictness hooks. The
+// other hooks are unused.
 class PluginExtension final : public pipeline::semantic_extension::SemanticExtension {
     vector<const Plugin *> enabled;
 
@@ -40,6 +41,26 @@ public:
         for (auto plugin : enabled) {
             plugin->rewriteClassBody(ctx, *classDef);
         }
+    }
+
+    optional<string> transformSource(string_view path, string_view source) const override {
+        optional<string> result;
+        for (auto plugin : enabled) {
+            if (auto transformed = plugin->transformSource(path, result.has_value() ? *result : source)) {
+                result = move(transformed);
+            }
+        }
+        return result;
+    }
+
+    optional<core::StrictLevel> strictLevelWithoutSigil(string_view path) const override {
+        optional<core::StrictLevel> result;
+        for (auto plugin : enabled) {
+            if (auto level = plugin->strictLevelWithoutSigil(path)) {
+                result = level;
+            }
+        }
+        return result;
     }
 
     unique_ptr<SemanticExtension> deepCopy(const core::GlobalState &, core::GlobalState &) override {

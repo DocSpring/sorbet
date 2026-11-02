@@ -2,6 +2,8 @@
 #define SORBET_PARSER_PARSER_H
 
 #include "Node.h"
+#include <optional>
+#include <string_view>
 
 namespace sorbet::parser {
 
@@ -28,8 +30,10 @@ public:
         }
     };
 
+    // DocSpring: `source`, when given, is parsed in place of the file's source, and has as many bytes.
     static ParseResult run(core::GlobalState &gs, core::FileRef file, Settings settings,
-                           std::vector<std::string> initialLocals = {});
+                           std::vector<std::string> initialLocals = {},
+                           std::optional<std::string_view> source = std::nullopt);
 };
 
 } // namespace sorbet::parser
