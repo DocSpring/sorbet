@@ -55,8 +55,10 @@ GitHub release. Then run `gh workflow run publish.yml --repo DocSpring/gems`, wh
 them to the gem source at https://docspring.github.io/gems/ (see [DocSpring/gems](https://github.com/DocSpring/gems)).
 
 The `sorbet` gem also carries each plugin's RBI generator, from the same sorbet-plugins commit as the binary, at
-`lib/sorbet-plugins/<plugin>/generate_rbi.rb`. An app runs them from the installed gem
-(`Gem::Specification.find_by_name('sorbet').gem_dir`), so the RBIs always match the plugins that read them.
+`lib/sorbet-plugins/<plugin>/generate_rbi.rb` (with the plugin's `generator/` directory, for a generator in several
+files). An app runs them from the installed gem (`Gem::Specification.find_by_name('sorbet').gem_dir`), so the RBIs
+always match the plugins that read them. The erb_views generator also runs the installed binary
+(`sorbet-static`'s `libexec/sorbet`): it reads the types of the values that reach each template from Sorbet.
 
 ## Moving to a new upstream release
 

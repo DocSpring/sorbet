@@ -6,8 +6,8 @@
 #
 # Writes dist/sorbet-static-<version>-<platform>.gem, dist/sorbet-<version>.gem and
 # dist/sorbet-static-and-runtime-<version>.gem. The sorbet gem also carries each plugin's RBI generator
-# (lib/sorbet-plugins/<plugin>/generate_rbi.rb, from SORBET_PLUGINS_DIR, default ../sorbet-plugins), so an app gets the
-# generators that match the plugins in its binary. Tapioca and Spoom depend on sorbet-static-and-runtime, which pins
+# (lib/sorbet-plugins/<plugin>/generate_rbi.rb and the plugin's generator/ directory if it has one, from
+# SORBET_PLUGINS_DIR, default ../sorbet-plugins), so an app gets the generators that match the plugins in its binary. Tapioca and Spoom depend on sorbet-static-and-runtime, which pins
 # sorbet and sorbet-runtime exactly, so we need our own: it pins our sorbet and upstream's unchanged sorbet-runtime.
 
 set -euo pipefail
@@ -44,6 +44,9 @@ source_uri="https://github.com/DocSpring/sorbet/tree/docspring"
     plugin="$(basename "$(dirname "$generator")")"
     mkdir -p "$build/lib/sorbet-plugins/$plugin"
     cp "$generator" "$build/lib/sorbet-plugins/$plugin/"
+    if [[ -d "$(dirname "$generator")/generator" ]]; then
+      cp -R "$(dirname "$generator")/generator" "$build/lib/sorbet-plugins/$plugin/"
+    fi
   done
   cd "$build"
   sed -e "s/0\.0\.0/${version}/g" -e "s|https://github.com/sorbet/sorbet|${source_uri}|" sorbet.gemspec > docspring.gemspec
