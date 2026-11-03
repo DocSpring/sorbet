@@ -102,6 +102,8 @@ jobs:
       - name: Test the plugins
         run: |
           sorbet/out/sorbet --version
+          # The erb_views runtime check's tests check values against sigs
+          gem install --no-document sorbet-runtime -v "$(cat sorbet/docspring/BASE_VERSION)"
           ruby sorbet-plugins/test/run_tests.rb sorbet/out/sorbet
 
       - name: Build gems
