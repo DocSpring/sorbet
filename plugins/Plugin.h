@@ -17,10 +17,14 @@ namespace sorbet::plugins {
 // `<root>` class, innermost first. It runs after parsing and before Sorbet's own statement rewriters (Minitest/RSpec,
 // `attr_reader`, `Struct.new`...), so a plugin can turn a DSL into code those rewriters already understand.
 //
-// Sorbet rewrites each file on its own (and again on every edit in the language server), so a plugin may only use
-// the tree it is given: never other files, global state it keeps itself, or anything outside Sorbet. Knowledge that
-// lives in other files (which class a factory builds, say) belongs in RBI files that the plugin's rewritten code
-// refers to by name.
+// Sorbet rewrites each file on its own (and again on every edit in the language server), so a plugin should use only
+// the tree it is given. Knowledge that lives in other files (which class a factory builds, say) belongs in RBI files
+// that the plugin's rewritten code refers to by name. A plugin that must read other files instead (sorbet-plugins'
+// `rails` reads a job's parent class and a model's table in `db/structure.sql`) reads them from disk on every call
+// and keeps no state of its own: files are rewritten on many threads, and the language server must see a saved
+// change. Even so, the language server sees that change only when it checks the dependent file again, and
+// `--cache-dir`, keyed on each file's own source, would keep the dependent file's old rewrite: such a plugin can't be
+// used with it.
 class Plugin {
 public:
     virtual ~Plugin() = default;
