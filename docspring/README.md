@@ -29,9 +29,11 @@ Our other Sorbet work:
   text at the same offsets. `strictLevelWithoutSigil` gives such a file's strictness when it has no `typed:` sigil.
   Sorbet still reads only the extensions `--allowed-extension` lists.
 - `plugins/Plugin.h`: `PluginError` (3590), the error a plugin reports when it meets code it can't type exactly.
-- `namer/namer.cc` and `core/Symbols.cc`: a positional parameter that a plugin synthesized with a zero-length
-  location keeps its name. Sorbet shows a positional parameter by its source text, which such a parameter doesn't
-  have, so errors about a generated method said "Expected `String` for argument ``" or named it `<arg>1`.
+- `namer/namer.cc` and `core/Symbols.cc`: a positional or `**` parameter that a plugin synthesized with a zero-length
+  location keeps its name. Sorbet shows such a parameter by its source text, which a synthesized one doesn't have, so
+  errors about a generated method said "Expected `String` for argument ``" or named it `<arg>1` or `<kwargs>`.
+  `Method::methodArityHash` hashes every `**` parameter as `<kwargs>`, as `ParamParsing::hashParams` does, so the name
+  doesn't change a method's shape.
 - `resolver/resolver.cc` and `main/pipeline/pipeline.cc`: several `sig`s that a rewriter or plugin wrote before one
   method are overloads, as they would be in an RBI file (upstream allows overloads only in RBI files, and in a `.rb`
   file keeps the last `sig`), and the body of such a method isn't type-checked (it only raises). The `rails` plugin

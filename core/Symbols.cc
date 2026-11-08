@@ -2473,7 +2473,10 @@ ArityHash Method::methodArityHash(const GlobalState &gs) const {
     for (const auto &e : this->parameters) {
         // Changing name of keyword arg is a shape change.
         if (e.flags.isKeyword) {
-            result = mix(result, _hash(e.name.shortName(gs)));
+            // A `**` parameter's name isn't part of the shape (`ParamParsing::hashParams` hashes each as `<kwargs>`),
+            // and one that a plugin synthesized keeps its own name (the namer's `defineArg`).
+            auto name = e.flags.isRepeated && e.name != Names::fwdKwargs() ? Names::kwargs() : e.name;
+            result = mix(result, _hash(name.shortName(gs)));
         }
         // Changing an argument from e.g. keyword to position-based is a shape change.
         result = mix(result, e.flags.toU1());

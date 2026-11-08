@@ -1014,10 +1014,18 @@ private:
 
         core::LocOffsets loc = parsedParam.loc;
         core::NameRef name;
+        // A parameter that a rewriter or plugin synthesized with a zero-length location has no source to show its
+        // name from (errors and hover show a positional or `**` parameter by its source).
+        auto synthesizedWithName = loc.exists() && loc.empty() && parsedParam.local._name.exists();
         if (parsedParam.flags.isKeyword) {
             if (parsedParam.flags.isRepeated) {
                 if (parsedParam.local._name == core::Names::fwdKwargs()) {
                     name = core::Names::fwdKwargs();
+                } else if (synthesizedWithName) {
+                    // The unique name keeps it, as for a positional parameter below: its short name is the
+                    // parameter's, and it never equals a keyword parameter's name.
+                    name = ctx.state.freshNameUnique(core::UniqueNameKind::PositionalArg, parsedParam.local._name,
+                                                     pos + 1);
                 } else {
                     name = core::Names::kwargs();
                 }
@@ -1037,10 +1045,8 @@ private:
                 loc = core::LocOffsets::none();
             }
             name = core::Names::blkArg();
-        } else if (loc.exists() && loc.empty() && parsedParam.local._name.exists()) {
-            // A positional parameter that a rewriter or plugin synthesized with a zero-length location has no source
-            // to show its name from (errors and hover show a positional parameter by its source), so the unique name
-            // keeps it: its short name is the parameter's.
+        } else if (synthesizedWithName) {
+            // The unique name keeps the name: its short name is the parameter's.
             name = ctx.state.freshNameUnique(core::UniqueNameKind::PositionalArg, parsedParam.local._name, pos + 1);
         } else {
             name = ctx.state.freshNameUnique(core::UniqueNameKind::PositionalArg, core::Names::arg(), pos + 1);
