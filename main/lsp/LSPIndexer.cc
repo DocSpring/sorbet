@@ -70,7 +70,7 @@ void LSPIndexer::computeFileHashes(const vector<shared_ptr<core::File>> &files, 
         return;
     }
 
-    hashing::Hashing::computeFileHashes(files, *config->logger, workers, config->opts);
+    hashing::Hashing::computeFileHashes(files, *config->logger, workers, config->opts, *gs);
 }
 
 void LSPIndexer::computeFileHashes(const vector<shared_ptr<core::File>> &files) const {

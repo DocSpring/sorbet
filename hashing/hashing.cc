@@ -7,6 +7,7 @@
 #include "core/NameSubstitution.h"
 #include "core/Unfreeze.h"
 #include "main/pipeline/pipeline.h"
+#include "main/pipeline/semantic_extension/SemanticExtension.h"
 #include "rapidjson/writer.h"
 
 using namespace std;
@@ -101,10 +102,14 @@ core::FileRef makeEmptyGlobalStateForFile(spdlog::logger &logger, shared_ptr<cor
 }
 
 unique_ptr<core::FileHash> computeFileHashForFile(shared_ptr<core::File> forWhat, spdlog::logger &logger,
-                                                  const realmain::options::Options &hashingOpts) {
+                                                  const realmain::options::Options &hashingOpts,
+                                                  const core::GlobalState &extensionsFrom) {
     Timer timeit(logger, "computeFileHash");
     unique_ptr<core::GlobalState> lgs;
     core::FileRef fref = makeEmptyGlobalStateForFile(logger, move(forWhat), /* out param */ lgs, hashingOpts);
+    for (auto &semanticExtension : extensionsFrom.semanticExtensions) {
+        lgs->semanticExtensions.emplace_back(semanticExtension->deepCopy(extensionsFrom, *lgs));
+    }
     // The caller's GlobalState shares this File, so use the caller's options (think `--typed-override`) for its level,
     // not the empty ones that the rest of hashing uses.
     fref.data(*lgs).strictLevel = realmain::pipeline::decideStrictLevel(*lgs, fref, hashingOpts);
@@ -120,7 +125,8 @@ unique_ptr<core::FileHash> computeFileHashForFile(shared_ptr<core::File> forWhat
 }; // namespace
 
 void Hashing::computeFileHashes(absl::Span<const shared_ptr<core::File>> files, spdlog::logger &logger,
-                                WorkerPool &workers, const realmain::options::Options &opts) {
+                                WorkerPool &workers, const realmain::options::Options &opts,
+                                const core::GlobalState &extensionsFrom) {
     Timer timeit(logger, "computeFileHashes");
     auto fileq = make_shared<ConcurrentBoundedQueue<size_t>>(files.size());
     for (size_t i = 0; i < files.size(); i++) {
@@ -131,7 +137,7 @@ void Hashing::computeFileHashes(absl::Span<const shared_ptr<core::File>> files, 
 
     auto resultq =
         make_shared<BlockingBoundedQueue<vector<pair<size_t, unique_ptr<const core::FileHash>>>>>(files.size());
-    workers.multiplexJob("lspStateHash", [fileq, resultq, &files, &logger, &opts]() {
+    workers.multiplexJob("lspStateHash", [fileq, resultq, &files, &logger, &opts, &extensionsFrom]() {
         vector<pair<size_t, unique_ptr<const core::FileHash>>> threadResult;
         int processedByThread = 0;
         size_t job;
@@ -144,7 +150,7 @@ void Hashing::computeFileHashes(absl::Span<const shared_ptr<core::File>> files, 
                         continue;
                     }
 
-                    threadResult.emplace_back(job, computeFileHashForFile(files[job], logger, opts));
+                    threadResult.emplace_back(job, computeFileHashForFile(files[job], logger, opts, extensionsFrom));
                 }
             }
         }

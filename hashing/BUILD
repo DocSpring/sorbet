@@ -16,6 +16,7 @@ cc_library(
         "//core",
         "//main/options",
         "//main/pipeline",
+        "//main/pipeline/semantic_extension:interface",
         "@rapidjson",
     ],
 )
@@ -38,6 +39,7 @@ cc_library(
         "//core",
         "//main/options",
         "//main/pipeline:pipeline-orig",
+        "//main/pipeline/semantic_extension:interface",
         "@rapidjson",
     ],
 )

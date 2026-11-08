@@ -2166,6 +2166,12 @@ unique_ptr<GlobalState> GlobalState::copyForLSPTypechecker(
     result->symbolsReferencedByFile = vector<UnorderedSet<SymbolRef>>{this->files->size(), UnorderedSet<SymbolRef>{}};
     result->kvstoreUuid = this->kvstoreUuid;
 
+    // The LSP indexer keeps this copy and indexes every edited file with it, and the rewriter runs semantic
+    // extensions on every class body.
+    for (auto &semanticExtension : this->semanticExtensions) {
+        result->semanticExtensions.emplace_back(semanticExtension->deepCopy(*this, *result));
+    }
+
     if (packagerEnabled) {
         // This option only makes sense in CLI mode
         auto packageAttributedErrors = false;
@@ -2207,6 +2213,12 @@ unique_ptr<GlobalState> GlobalState::copyForSlowPath(
     result->constantNames = this->constantNames;
     result->uniqueNames = this->uniqueNames;
     result->namesByHash = this->namesByHash;
+
+    // The slow path indexes the edited files with this copy, and the rewriter runs semantic extensions on every class
+    // body.
+    for (auto &semanticExtension : this->semanticExtensions) {
+        result->semanticExtensions.emplace_back(semanticExtension->deepCopy(*this, *result));
+    }
 
     // Reserve space for the symbol tables, under the assumption that we'll probably grow to a similar size on the slow
     // path.

@@ -590,7 +590,7 @@ int realmain(int argc, char *argv[]) {
 
         if (!opts.storeState.empty()) {
             // Compute file hashes for payload files (which aren't part of inputFiles) for LSP
-            hashing::Hashing::computeFileHashes(gs->getFiles(), *logger, *workers, opts);
+            hashing::Hashing::computeFileHashes(gs->getFiles(), *logger, *workers, opts, *gs);
         }
 
         inputFiles = pipeline::reserveFiles(*gs, opts.inputFileNames);

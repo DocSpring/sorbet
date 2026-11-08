@@ -32,8 +32,12 @@ class Hashing final {
 public:
     // Computes file hashes for the given files, and stores them in the files. If supplied, attempts to retrieve hashes
     // from the key-value store. Returns 'true' if it had to compute any file hashes.
+    //
+    // Each file is indexed with the semantic extensions of `extensionsFrom`, which run in the rewriter, so its hash
+    // covers what they write, as when `indexAndComputeFileHashes` indexes it with a GlobalState that has them.
     static void computeFileHashes(absl::Span<const std::shared_ptr<core::File>> files, spdlog::logger &logger,
-                                  WorkerPool &workers, const realmain::options::Options &opts);
+                                  WorkerPool &workers, const realmain::options::Options &opts,
+                                  const core::GlobalState &extensionsFrom);
 
     /**
      * Parses and indexes the provided files using `gs` _and_ computes their hashes.
