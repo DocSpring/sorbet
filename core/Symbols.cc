@@ -1648,7 +1648,9 @@ string_view ParamInfo::parameterName(const GlobalState &gs) const {
     if (flags.isKeyword && !flags.isRepeated) {
         return name.shortName(gs);
     } else {
-        if (auto source = loc.source(gs)) {
+        // A method a rewriter or plugin synthesized can have parameters with zero-length locations: their source is
+        // empty, so use the name.
+        if (auto source = loc.source(gs); source.has_value() && !source->empty()) {
             return source.value();
         } else {
             return name.shortName(gs);

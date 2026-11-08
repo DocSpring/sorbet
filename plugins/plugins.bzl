@@ -11,6 +11,7 @@ SORBET_PLUGINS = {
     "sorbet_plugin_capybara": {"path": "../sorbet-plugins/capybara"},
     "sorbet_plugin_erb_views": {"path": "../sorbet-plugins/erb_views"},
     "sorbet_plugin_factory_bot": {"path": "../sorbet-plugins/factory_bot"},
+    "sorbet_plugin_rails": {"path": "../sorbet-plugins/rails"},
     "sorbet_plugin_rswag": {"path": "../sorbet-plugins/rswag"},
     "sorbet_plugin_rspec": {"path": "../sorbet-plugins/rspec"},
 }

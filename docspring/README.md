@@ -5,7 +5,8 @@ This branch (`docspring`) is upstream Sorbet plus a small plugin core, built wit
 otherwise leave blocks untyped: RSpec (spec types, loops, shared examples), Capybara's feature DSL, rswag, FactoryBot
 and ActiveAdmin. One more, `erb_views`, type-checks Rails' ERB templates: each template is checked at `typed: strict`
 against the controllers and mailers that render it, with its instance variables' types inferred from their actions,
-and each partial's locals typed by a `sig` comment.
+and each partial's locals typed by a `sig` comment. And `rails` writes the methods Rails and Sidekiq define from an
+app's own code (a job's `perform_async`, typed from its `perform`), in place of Tapioca's DSL RBIs for them.
 
 Our other Sorbet work:
 
@@ -27,6 +28,10 @@ Our other Sorbet work:
   with as many bytes as the file, so error messages, autocorrects and the language server's edits use the file's own
   text at the same offsets. `strictLevelWithoutSigil` gives such a file's strictness when it has no `typed:` sigil.
   Sorbet still reads only the extensions `--allowed-extension` lists.
+- `plugins/Plugin.h`: `PluginError` (3590), the error a plugin reports when it meets code it can't type exactly.
+- `namer/namer.cc` and `core/Symbols.cc`: a positional parameter that a plugin synthesized with a zero-length
+  location keeps its name. Sorbet shows a positional parameter by its source text, which such a parameter doesn't
+  have, so errors about a generated method said "Expected `String` for argument ``" or named it `<arg>1`.
 - `core/GlobalState.cc`: `copyForIndexThread` copies the semantic extensions. Without it the rewriter's
   semantic-extension hook never runs for files indexed on worker threads. Upstream merged the fix on 2026-10-21
   ([sorbet/sorbet#10804](https://github.com/sorbet/sorbet/pull/10804), `94623ce8a`), so rebasing onto a base that

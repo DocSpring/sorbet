@@ -47,6 +47,11 @@ public:
     }
 };
 
+// The error a plugin reports when it meets code it can't type exactly (an attribute type it has no rule for, say),
+// rather than writing a guess. One code for every plugin; the message names the plugin and says what to do. Reported
+// at every strictness level.
+inline constexpr core::ErrorClass PluginError{3590, core::StrictLevel::False};
+
 // Adds a plugin to the binary's registry. Plugins call this through SORBET_PLUGIN from a static initializer, so their
 // Bazel `cc_library` needs `alwayslink = True`.
 bool registerPlugin(std::unique_ptr<Plugin> plugin);
