@@ -6,7 +6,10 @@
 # - this build, no plugins (the plugin core's own cost)
 # - this build, with the RSpec-side plugins
 #
-# each through the rewriter only, and through a full check.
+# each through the rewriter only, and through a full check. The other plugins read the app they check: `active_admin`
+# and `erb_views` need RBIs generated from the running app, and `rails` reads `db/structure.sql`, which the corpus
+# doesn't have (it keeps `db/schema.rb`). A change to one of those is timed with `srb tc` on DocSpring itself, before
+# and after, in alternating runs.
 #
 #   docspring/benchmark.sh <dir with this build's sorbet-static gem>
 #
