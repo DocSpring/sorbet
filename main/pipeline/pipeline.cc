@@ -1379,6 +1379,11 @@ public:
     CFGCollectorAndTyper(const options::Options &opts) : opts(opts) {};
 
     void preTransformMethodDef(core::Context ctx, const ast::MethodDef &m) {
+        // DocSpring's build: an overloaded method that a rewriter or plugin wrote has a body that only raises, so
+        // there's nothing to check (in an RBI file, no body is checked).
+        if (m.flags.isRewriterSynthesized && m.symbol.data(ctx)->flags.isOverloaded) {
+            return;
+        }
         if (!infer::Inference::willRun(ctx, m.declLoc, m.symbol)) {
             return;
         }

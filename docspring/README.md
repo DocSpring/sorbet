@@ -32,6 +32,10 @@ Our other Sorbet work:
 - `namer/namer.cc` and `core/Symbols.cc`: a positional parameter that a plugin synthesized with a zero-length
   location keeps its name. Sorbet shows a positional parameter by its source text, which such a parameter doesn't
   have, so errors about a generated method said "Expected `String` for argument ``" or named it `<arg>1`.
+- `resolver/resolver.cc` and `main/pipeline/pipeline.cc`: several `sig`s that a rewriter or plugin wrote before one
+  method are overloads, as they would be in an RBI file (upstream allows overloads only in RBI files, and in a `.rb`
+  file keeps the last `sig`), and the body of such a method isn't type-checked (it only raises). The `rails` plugin
+  writes Tapioca's overloaded relation methods (`create`, `find`, `first`) into each model.
 - `core/GlobalState.cc`: `copyForIndexThread` copies the semantic extensions. Without it the rewriter's
   semantic-extension hook never runs for files indexed on worker threads. Upstream merged the fix on 2026-10-21
   ([sorbet/sorbet#10804](https://github.com/sorbet/sorbet/pull/10804), `94623ce8a`), so rebasing onto a base that

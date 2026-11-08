@@ -4270,6 +4270,12 @@ private:
         return TypeSyntax::parseSigTop(ctx.withOwner(sigOwner), send, blameSymbol);
     }
 
+    // DocSpring's build: overloads are allowed in RBI files, and for sigs a rewriter or plugin wrote, in any file.
+    // The rails plugin writes the overloaded sigs Tapioca wrote into a model's RBI into the model's own file.
+    static bool allSynthesized(const InlinedVector<ast::Send *, 1> &sigs) {
+        return absl::c_all_of(sigs, [](const ast::Send *sig) { return sig->flags.isRewriterSynthesized; });
+    }
+
     void processStatement(core::Context ctx, ast::ExpressionPtr &stat, InlinedVector<ast::Send *, 1> &lastSigs) {
         typecase(
             stat,
@@ -4277,7 +4283,8 @@ private:
             [&](ast::Send &send) {
                 if (TypeSyntax::isSig(ctx, send)) {
                     if (!lastSigs.empty()) {
-                        if (!ctx.file.data(ctx).permitOverloadDefinitions()) {
+                        if (!ctx.file.data(ctx).permitOverloadDefinitions() &&
+                            !(send.flags.isRewriterSynthesized && allSynthesized(lastSigs))) {
                             if (auto e = ctx.beginError(lastSigs[0]->loc, core::errors::Resolver::OverloadNotAllowed)) {
                                 e.setHeader("Unused type annotation. No method def before next annotation");
                                 e.addErrorLine(ctx.locAt(send.loc), "Type annotation that will be used instead");
@@ -4349,7 +4356,7 @@ private:
                                                                        lastSig->loc,
                                                                        parseSig(ctx, sigOwner, *lastSig, mdef)});
                     } else {
-                        bool isOverloaded = ctx.file.data(ctx).permitOverloadDefinitions();
+                        bool isOverloaded = ctx.file.data(ctx).permitOverloadDefinitions() || allSynthesized(lastSigs);
                         InlinedVector<OverloadedMethodSignature, 2> sigs;
                         for (auto &lastSig : lastSigs) {
                             auto sig = parseSig(ctx, sigOwner, *lastSig, mdef);
